@@ -14,3 +14,8 @@ export interface Comment {
     Username:  string;
     CreatedAt: string;
 }
+
+export interface Topic {
+    Id: number;
+    Name: string;
+}

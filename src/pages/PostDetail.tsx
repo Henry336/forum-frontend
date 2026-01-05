@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { 
   Typography, 
   Button,
@@ -22,18 +22,25 @@ function PostDetail() {
   // NTS: Input for writing a new comment
   const [newComment, setNewComment] = useState("")
 
+  const fetchComments = useCallback(() => {
+    fetch(`http://localhost:8080/posts/${id}/comments`)
+    .then(res => res.json())
+    .then(data => {
+      console.log("FROM BACKEND:", data);
+      setComments(data || [])
+    }) // [] is included to default list to [] if empty (null)
+    .catch(err => console.error(err));
+  }, [id]);
+
   useEffect(() => {
     fetch(`http://localhost:8080/posts/${id}`)
     .then(res => res.json())
     .then(data => setPost(data))
     .catch(err => console.error(err));
 
-    fetch(`http://localhost:8080/posts/${id}/comments`)
-    .then(res => res.json())
-    .then(data => setComments(data || [])) // [] is included to default list to [] if empty (null)
-    .catch(err => console.error(err));
-  }, [id]) // Finally, a depedency has been added. This will rerun if ID changes
-
+    fetchComments();
+  }, [id, fetchComments]) // Finally, a dependency has been added. This will rerun if ID changes
+  // NTS for above: fetchComments was also added as a dependency
   const handleAddComment = () => {
     if (!newComment) {
       return;
@@ -49,9 +56,12 @@ function PostDetail() {
     .then(response => {
       if (response.ok) {
         setNewComment(""); // Clear the input
-        window.location.reload(); // placeholder refresh (to be improved)
+        fetchComments(); // Text to the right has BEEN improved with re-fetching [placeholder refresh (to be improved)]
+      } else {
+        alert("Failed to post comment");
       }
-    });
+    })
+    .catch(err => console.error(err));
   }
 
   // NTS: This is for loading
@@ -63,7 +73,7 @@ function PostDetail() {
   return (
     <div style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
-            <Button variant="outlined" sx={{ mb: 2 }}>Back to Feed</Button>
+            <Button variant="outlined" sx={{ mb: 2 }}>Back to the Gathering</Button>
         </Link>
         
         {/* THE POST */}
@@ -79,7 +89,7 @@ function PostDetail() {
                 </Typography>
 
                 <Typography variant="caption" color="gray" sx={{ mt: 2, display: 'block' }}>
-                    Posted by {post.Username} • {new Date(post.CreatedAt).toLocaleDateString()}
+                    Shared by {post.Username} • {new Date(post.CreatedAt).toLocaleDateString()}
                 </Typography>
 
             </CardContent>
@@ -88,19 +98,19 @@ function PostDetail() {
         <Divider sx={{ mb: 4 }} /> {/* Read more about what this does, later */}
 
         {/* COMMENT SECTION */}
-        <Typography variant="h5" gutterBottom>Comments ({comments.length})</Typography>
+        <Typography variant="h5" gutterBottom> Chatters ({comments.length})</Typography>
         
         {/* Input Box */}
         <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
 
             <TextField 
                 fullWidth 
-                placeholder="Write a comment..." 
+                placeholder="Share your opinion..." 
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
             />
             <Button variant="contained" onClick={handleAddComment}>
-              Post
+              Reply
             </Button>
             
         </Stack>
